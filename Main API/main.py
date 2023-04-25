@@ -2,6 +2,7 @@ from fastapi import FastAPI
 import uvicorn
 import json
 import docker
+import os
 
 
 app = FastAPI()
@@ -17,12 +18,38 @@ def run_container(image_name, env_vars=None, container_name=None):
     container = client.containers.run(image_name, detach=True, name=container_name, environment=environment)
     return container
 
-@app.get("/submit-data")
-async def submit_data(data:str):
-    print(data)
-    return 200
-@app.get("/runcont")
-async def runcont(HOST_TO_PING: str,HOST_TO_SEND:str, TIMEOUT_SEND:str, NAME:str ):
+
+@app.get("/StopContainer")
+async def StopContainer(NAME: str, ID:str):
+
+    client = docker.from_env()
+    if os.path.isfile(f"running_containers/{NAME}"):
+
+
+        with open(f"running_containers/{NAME}") as user_file:
+            file_contents = user_file.read()
+        
+        print(file_contents)
+
+        parsed_json = json.loads(file_contents)
+
+        container = client.containers.get(NAME)
+
+        container.stop()
+        container.remove()
+
+        return 200
+
+    else:
+        return 404
+
+
+
+
+
+
+@app.get("/RunWebSensor")
+async def RunWebSensor(HOST_TO_PING: str,HOST_TO_SEND:str, TIMEOUT_SEND:str, NAME:str ):
     env_vars = {
     "HOST_TO_PING": HOST_TO_PING,
     "HOST_TO_SEND": HOST_TO_SEND,
@@ -32,13 +59,12 @@ async def runcont(HOST_TO_PING: str,HOST_TO_SEND:str, TIMEOUT_SEND:str, NAME:str
     json_object = json.dumps(info_conteiner, indent=4)
     with open(f"running_containers/{NAME}.json", "w") as outfile:
         outfile.write(json_object)
+
+
+    return 200
     
 
-@app.get("/send-data")
-async def send_data():
-
-    return "{hi:'hi'}"
 
 if __name__ == "__main__":
     
-    uvicorn.run("main2:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
