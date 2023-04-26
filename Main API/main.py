@@ -9,14 +9,34 @@ app = FastAPI()
 
 
 
-def run_container(image_name, env_vars=None, container_name=None):
-    """
-    Запускает докер контейнер из указанного образа с указанными переменными среды и именем контейнера, возвращает контейнер
-    """
+def start_container(container_name, image_name, network_name, env_vars, ports):
     client = docker.from_env()
-    environment = env_vars or {}
-    container = client.containers.run(image_name, detach=True, name=container_name, environment=environment)
+    
+    # создание контейнера с настройками
+    container = client.containers.create(
+        image=image_name,
+        name=container_name,
+        network=network_name,
+        environment=env_vars,
+        ports=ports,
+        restart_policy={'Name': 'always'}
+    )
+    
+    # запуск контейнера
+    container.start()
+    
+    # возвращаем объект контейнера
     return container
+
+def WriteDockerConteinerInfo(name: str, id:str):
+    info_conteiner = {"name":name, "id": id} 
+    json_object = json.dumps(info_conteiner, indent=4)
+    with open(f"running_containers/{name}.json", "w") as outfile:
+        outfile.write(json_object)
+
+def RemoveDockerContainerInfo(name:str):
+    os.remove(f"running_containers/{name}.json")
+
 
 
 @app.get("/StopContainer")
@@ -38,6 +58,8 @@ async def StopContainer(NAME: str, ID:str):
         container.stop()
         container.remove()
 
+        RemoveDockerContainerInfo(NAME)
+
         return 200
 
     else:
@@ -54,11 +76,8 @@ async def RunWebSensor(HOST_TO_PING: str,HOST_TO_SEND:str, TIMEOUT_SEND:str, NAM
     "HOST_TO_PING": HOST_TO_PING,
     "HOST_TO_SEND": HOST_TO_SEND,
     "TIMEOUT_SEND":TIMEOUT_SEND}
-    container = run_container("test_sensor_scan:latest", env_vars=env_vars, container_name = NAME)
-    info_conteiner = {"name":NAME, "id": container.id} 
-    json_object = json.dumps(info_conteiner, indent=4)
-    with open(f"running_containers/{NAME}.json", "w") as outfile:
-        outfile.write(json_object)
+    container = start_container(image_name="test_sensor_scan:latest", env_vars=env_vars, container_name = NAME, network_name="AH_net", ports=None)
+    WriteDockerConteinerInfo(id=container.id, name=NAME)
 
 
     return 200
@@ -66,5 +85,45 @@ async def RunWebSensor(HOST_TO_PING: str,HOST_TO_SEND:str, TIMEOUT_SEND:str, NAM
 
 
 if __name__ == "__main__":
+
+    client = docker.from_env()
+
+    print("Инициализация системы...")
+
+    
+    net_id = []
+    names=["AH_net"]
+    my_net = client.networks.list(names=names)
+    print("Поиск сети...")
+    if my_net == []:
+        print("Создание сети...")
+        ipam_pool = docker.types.IPAMPool(subnet='10.0.0.0/24',gateway='10.0.0.1')
+
+        ipam_config = docker.types.IPAMConfig(pool_configs=[ipam_pool])
+
+        network = client.networks.create("AH_net",driver="bridge",ipam=ipam_config)
+    else:
+        print("Сеть обноружена!")
+        net_id = my_net[0].id
+
+
+    try:
+        print("Поиск Redis сервера...")
+        container = client.containers.get("redis_message_broker")
+        print("Redis сервер обнаружен!")
+    except:
+        print("Загрузка образа...")
+        client.images.pull("redis/redis-stack-server:latest") 
+        print("Создание контейнера...")
+        env_vars = {}
+        ports = {'6379/tcp': ('0.0.0.0', 6379)}
+        container_name = 'redis_message_broker'
+        image_name = 'redis/redis-stack-server:latest'
+        network_name = "AH_net"
+        print("Запуск Redis сервера...")
+        # запускаем контейнер Redis
+        redis_container = start_container(container_name, image_name, network_name, env_vars, ports)
+    
+    print("Запуск API...")
     
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
