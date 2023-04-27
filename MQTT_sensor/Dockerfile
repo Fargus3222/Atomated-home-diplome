@@ -5,10 +5,10 @@ RUN apk add py-pip
 
 WORKDIR /foreverOnlineApp
 
-ENV HOST_TO_PING=https://google.com \
-    RESID_IP=https://google.com \
-    TIMEOUT_SEND=5 \
-    SENSOR_NAME=Untitled
+ENV MQTT_BROKER_IP=NULL \
+    MQTT_TOPIC=Untitled \
+    REDIS_IP=NULL 
+
 
 COPY rt.txt rt.txt
 

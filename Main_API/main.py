@@ -40,8 +40,8 @@ def start_container(container_name, image_name, network_name, env_vars, ports, v
     # возвращаем объект контейнера
     return container
 
-def WriteDockerConteinerInfo(name: str, id:str):
-    info_conteiner = {"name":name, "id": id} 
+def WriteDockerConteinerInfo(name: str, id:str, ip:str):
+    info_conteiner = {"name":name, "id": id, "ip":ip} 
     json_object = json.dumps(info_conteiner, indent=4)
     with open(f"running_containers/{name}.json", "w") as outfile:
         outfile.write(json_object)
@@ -83,11 +83,23 @@ async def StopContainer(NAME: str, ID:str):
 
 
 @app.get("/RunWebSensor")
-async def RunWebSensor(HOST_TO_PING: str,HOST_TO_SEND:str, TIMEOUT_SEND:str, NAME:str ):
+async def RunWebSensor(HOST_TO_PING: str, TIMEOUT_SEND:str,SENSOR_NAME:str, NAME:str ):
+
+    with open(f"running_containers/redis_message_broker.json") as user_file:
+        file_contents = user_file.read()
+        
+    print(file_contents)
+
+    parsed_json = json.loads(file_contents)
+
+    REDIS_IP = parsed_json["ip"]
+    
+
     env_vars = {
     "HOST_TO_PING": HOST_TO_PING,
-    "HOST_TO_SEND": HOST_TO_SEND,
-    "TIMEOUT_SEND":TIMEOUT_SEND}
+    "REDIS_IP": REDIS_IP,
+    "TIMEOUT_SEND":TIMEOUT_SEND,
+    "SENSOR_NAME":SENSOR_NAME}
     container = start_container(image_name="test_sensor_scan:latest", env_vars=env_vars, container_name = NAME, network_name="AH_net", ports=None, volumes=None)
     WriteDockerConteinerInfo(id=container.id, name=NAME)
 
@@ -108,6 +120,12 @@ if __name__ == "__main__":
     except docker.errors.ImageNotFound:
         print(f"Идет сборка оброза web_sensor_core")
         BuildImage(f"{os.getcwd()}/../Web_sensor", "web_sensor_core")
+
+    try:
+        image = client.images.get("mqtt_sensor_core")
+    except docker.errors.ImageNotFound:
+        print(f"Идет сборка оброза mqtt_sensor_core")
+        BuildImage(f"{os.getcwd()}/../MQTT_sensor", "mqtt_sensor_core")
 
     
     net_id = []
