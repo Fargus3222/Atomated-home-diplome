@@ -3,13 +3,14 @@ import uvicorn
 import json
 import docker
 import os
+import subprocess
 
 
 app = FastAPI()
 
 
 
-def start_container(container_name, image_name, network_name, env_vars, ports):
+def start_container(container_name, image_name, network_name, env_vars, ports, volumes):
     client = docker.from_env()
     
     # создание контейнера с настройками
@@ -19,6 +20,7 @@ def start_container(container_name, image_name, network_name, env_vars, ports):
         network=network_name,
         environment=env_vars,
         ports=ports,
+        volumes=volumes,
         restart_policy={'Name': 'always'}
     )
     
@@ -76,7 +78,7 @@ async def RunWebSensor(HOST_TO_PING: str,HOST_TO_SEND:str, TIMEOUT_SEND:str, NAM
     "HOST_TO_PING": HOST_TO_PING,
     "HOST_TO_SEND": HOST_TO_SEND,
     "TIMEOUT_SEND":TIMEOUT_SEND}
-    container = start_container(image_name="test_sensor_scan:latest", env_vars=env_vars, container_name = NAME, network_name="AH_net", ports=None)
+    container = start_container(image_name="test_sensor_scan:latest", env_vars=env_vars, container_name = NAME, network_name="AH_net", ports=None, volumes=None)
     WriteDockerConteinerInfo(id=container.id, name=NAME)
 
 
@@ -105,14 +107,18 @@ if __name__ == "__main__":
     else:
         print("Сеть обноружена!")
         net_id = my_net[0].id
-
+    
 
     try:
         print("Поиск Redis сервера...")
         container = client.containers.get("redis_message_broker")
-        print("Redis сервер обнаружен!")
+        if container.status == 'running':
+            print("Redis сервер обнаружен!")
+        else:
+            print("Запуск Redis сервера...")
+            container.start()
     except:
-        print("Загрузка образа...")
+        print("Загрузка образа redis/redis-stack-server:latest ...")
         client.images.pull("redis/redis-stack-server:latest") 
         print("Создание контейнера...")
         env_vars = {}
@@ -122,7 +128,31 @@ if __name__ == "__main__":
         network_name = "AH_net"
         print("Запуск Redis сервера...")
         # запускаем контейнер Redis
-        redis_container = start_container(container_name, image_name, network_name, env_vars, ports)
+        redis_container = start_container(container_name, image_name, network_name, env_vars, ports, volumes=None)
+
+    try:
+        print("Поиск MQTT брокера...")
+        container = client.containers.get("MQTT_broker")
+        if container.status == 'running':
+            print("MQTT брокер обнаружен!")
+        else:
+            print("Запуск MQTT брокера...")
+            container.start()
+    except:
+        print("Загрузка образа eclipse-mosquitto:2.0.0 ...")
+        client.images.pull("eclipse-mosquitto:2.0.0") 
+        print("Создание контейнера...")
+        env_vars = {}
+        ports = {'1883/tcp': ('0.0.0.0', 1883)}
+        volumes = {
+            f'{os.getcwd()}/configs/mosquitto.conf': {'bind': '/mosquitto/config/mosquitto.conf', 'mode': 'rw'}
+        }
+        container_name = 'MQTT_broker'
+        image_name = 'eclipse-mosquitto:2.0.0'
+        network_name = "AH_net"
+        print("Запуск MQTT брокера...")
+        # запускаем контейнер Redis
+        mosquitto_container = start_container(container_name, image_name, network_name, env_vars, ports, volumes)
     
     print("Запуск API...")
     
