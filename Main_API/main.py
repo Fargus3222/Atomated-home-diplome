@@ -10,6 +10,16 @@ app = FastAPI()
 
 
 
+def BuildImage(path:str, name:str):
+    client = docker.from_env()
+    # Сборка образа
+    client.images.build(
+        path=path,
+        tag=name
+    )
+
+
+
 def start_container(container_name, image_name, network_name, env_vars, ports, volumes):
     client = docker.from_env()
     
@@ -91,6 +101,13 @@ if __name__ == "__main__":
     client = docker.from_env()
 
     print("Инициализация системы...")
+
+    print("Поиск необходимых образов...")
+    try:
+        image = client.images.get("web_sensor_core")
+    except docker.errors.ImageNotFound:
+        print(f"Идет сборка оброза web_sensor_core")
+        BuildImage(f"{os.getcwd()}/../Web_sensor", "web_sensor_core")
 
     
     net_id = []
