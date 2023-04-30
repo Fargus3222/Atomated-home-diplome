@@ -1,3 +1,6 @@
+import json
 import os
 
-print(f'{os.getcwd()}/configs/mosquitto.conf')
+JSON_PATH = f'{os.getcwd()}/json_configs'
+
+
