@@ -3,6 +3,7 @@ import redis
 import time
 import os
 import json
+from Models.Configurations import Web_sensor_config
 
 # first way
 
@@ -16,9 +17,10 @@ while True:
 
     # Отправка GET-запроса и получение JSON-данных
     response = requests.get(url)
-    json_data = response.json()
+    json_data = response.content()
+    parsed_json = json.loads("json_data") 
 
-    redis_client.hset(f'{json_data["sensor_name"]}:{json_data["sensor_id"]}', mapping={'value': json_data["value"]})
+    redis_client.set(f'{parsed_json["sensor_name"]}', parsed_json["value"])
 
 
     time.sleep(int(os.environ['TIMEOUT_SEND']))

@@ -11,6 +11,10 @@ RUN pip install -r rt.txt
 
 COPY . .
 
+ENV  REDIS_IP=None \
+    MQTT_BROKER_IP=None \
+    HOST_API_IP=None
+
 CMD ["python3", "main.py"]
 
 

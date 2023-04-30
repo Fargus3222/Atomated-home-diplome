@@ -2,3 +2,4 @@ requests
 uvicorn
 fastapi
 docker
+redis

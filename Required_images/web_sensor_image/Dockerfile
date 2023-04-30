@@ -6,7 +6,7 @@ RUN apk add py-pip
 WORKDIR /foreverOnlineApp
 
 ENV HOST_TO_PING=https://google.com \
-    RESID_IP=https://google.com \
+    REDIS_IP=https://google.com \
     TIMEOUT_SEND=5 \
     SENSOR_NAME=Untitled
 

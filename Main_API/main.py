@@ -4,6 +4,9 @@ import json
 import docker
 import os
 from datetime import datetime
+import Models.Configurations
+
+
 
 
 JSON_PATH = f'{os.getcwd()}/json_configs'
@@ -15,6 +18,14 @@ app = FastAPI()
 client = docker.from_env()
 
 
+def Get_containerts_data():
+    with open(f"{JSON_PATH}/containers.json") as user_file:
+        file_contents = user_file.read()
+    parsed_json = json.loads(file_contents)
+
+    return parsed_json
+
+
 def Get_req_images():
     info = []
     
@@ -22,8 +33,10 @@ def Get_req_images():
     rootdir = f'{os.getcwd()}/../Required_images'
     for rootdir, dirs, files in os.walk(rootdir):
         for subdir in dirs:
-            info_image = {"name": subdir, "path":os.path.join(rootdir, subdir)} 
-            info.append(info_image)
+            if("image" in subdir):
+
+                info_image = {"name": subdir, "path":os.path.join(rootdir, subdir)} 
+                info.append(info_image)
 
 
         
@@ -111,6 +124,12 @@ def RemoveDockerContainerInfo(name:str):
         outfile.write(json.dumps(parsed_json, indent=4))
 
 
+@app.get("/Test_sensor_host")
+async def testsensor():
+    mes = {"sensor_name" : "test", "value": "Call"} 
+    return mes
+
+
 
 
 @app.get("/StopContainer")
@@ -142,8 +161,8 @@ async def StopContainer(NAME: str):
 
 
 
-@app.get("/RunWebSensor")
-async def RunWebSensor(HOST_TO_PING: str, TIMEOUT_SEND:str,SENSOR_NAME:str, NAME:str ):
+@app.post("/Run_web_sensor")
+async def Run_web_sensor(Config : Models.Configurations.Web_sensor_config):
 
     with open(f"{JSON_PATH}/containers.json") as user_file:
         file_contents = user_file.read()
@@ -155,12 +174,12 @@ async def RunWebSensor(HOST_TO_PING: str, TIMEOUT_SEND:str,SENSOR_NAME:str, NAME
     
 
     env_vars = {
-    "HOST_TO_PING": HOST_TO_PING,
+    "HOST_TO_PING": Config.Sensor_host,
     "REDIS_IP": REDIS_IP,
-    "TIMEOUT_SEND":TIMEOUT_SEND,
-    "SENSOR_NAME":SENSOR_NAME}
-    container = start_container(image_name="test_sensor_scan:latest", env_vars=env_vars, container_name = NAME, network_name="AH_net", ports=None, volumes=None)
-    WriteDockerConteinerInfo(id=container.id, name=NAME,ip = str( get_container_ip(container.id,"AH_net")))
+    "TIMEOUT_SEND":Config.Timeout,
+    "SENSOR_NAME":Config.Sensor_name}
+    container = start_container(image_name="web_sensor_image:latest", env_vars=env_vars, container_name = Config.Sensor_name, network_name="AH_net", ports=None, volumes=None)
+    WriteDockerConteinerInfo(id=container.id, name=Config.Sensor_name,ip = str( get_container_ip(container.id,"AH_net")))
 
 
     return 200
@@ -266,6 +285,33 @@ if __name__ == "__main__":
         mosquitto_container = start_container(container_name, image_name, network_name, env_vars, ports, volumes)
 
         WriteDockerConteinerInfo(name="MQTT_Broker", id = mosquitto_container.id, ip = get_container_ip(container_name,network_name) )
+
+
+    try:
+        print("Поиск API...")
+        container = client.containers.get("docker_api")
+        if container.status == 'running':
+            print("API обнаружен!")
+        else:
+            print("Запуск API...")
+            container.start()
+    except:
+
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        host_ip = s.getsockname()[0]
+        s.close()
+        print("Создание контейнера...")
+        env_vars = {"REDIS_IP": Get_containerts_data()["Redis"], "MQTT_BROKER_IP": Get_containerts_data()["MQTT_Broker"]["ip"],"HOST_API_IP":f"http://{host_ip}:8000" }
+        ports = {'8123/tcp': ('0.0.0.0', 8123)}
+        container_name = 'docker_api'
+        image_name = 'docker_api_image'
+        network_name = "AH_net"
+        print("Запуск API...")
+        # запускаем контейнер Redis
+        docker_api_container = start_container(container_name, image_name, network_name, env_vars, ports, volumes=None)
+        WriteDockerConteinerInfo(name="docker_api", id = docker_api_container.id, ip = get_container_ip(container_name,network_name) )
     
 
     print(f"Время инициализации системы {datetime.now() - start_time}")
