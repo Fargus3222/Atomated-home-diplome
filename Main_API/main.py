@@ -3,10 +3,7 @@ import uvicorn
 import json
 import docker
 import os
-import subprocess
-import time
 from datetime import datetime
-import time
 
 
 JSON_PATH = f'{os.getcwd()}/json_configs'
@@ -22,7 +19,7 @@ def Get_req_images():
     info = []
     
  
-    rootdir = 'C:/Users/Fargus/Desktop/Autamoted_home/Required_images'
+    rootdir = f'{os.getcwd()}/../Required_images'
     for rootdir, dirs, files in os.walk(rootdir):
         for subdir in dirs:
             info_image = {"name": subdir, "path":os.path.join(rootdir, subdir)} 

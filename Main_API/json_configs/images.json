@@ -1,14 +1,14 @@
 [
     {
         "name": "docker_api",
-        "path": "C:/Users/Fargus/Desktop/Autamoted_home/Required_images\\docker_api"
+        "path": "C:\\Users\\Fargus\\Desktop\\Autamoted_home\\Main_API/../Required_images\\docker_api"
     },
     {
         "name": "mqtt_sensor",
-        "path": "C:/Users/Fargus/Desktop/Autamoted_home/Required_images\\mqtt_sensor"
+        "path": "C:\\Users\\Fargus\\Desktop\\Autamoted_home\\Main_API/../Required_images\\mqtt_sensor"
     },
     {
         "name": "web_sensor",
-        "path": "C:/Users/Fargus/Desktop/Autamoted_home/Required_images\\web_sensor"
+        "path": "C:\\Users\\Fargus\\Desktop\\Autamoted_home\\Main_API/../Required_images\\web_sensor"
     }
 ]
