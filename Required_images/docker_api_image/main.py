@@ -29,12 +29,6 @@ async def testsensor():
 
 @app.post("/Run_web_sensor")
 async def testsensor(Config: Models.Configurations.Web_sensor_config):
-
-
-
-    print(Config.Sensor_host)
-    print(Config.Sensor_name)
-    print(Config.Timeout)
     
     headers = {'accept': 'application/json', 'Content-Type': 'application/json'}
 

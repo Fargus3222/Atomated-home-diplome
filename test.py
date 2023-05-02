@@ -1,27 +1,27 @@
-import json
+import requests
+import redis
+import time
 import os
+import json
+
+# first way
 
 
-
-JSON_PATH = f'{os.getcwd()}/json_configs'
-
-def Get_req_images():
-    info = []
+while True:
     
- 
-    rootdir = f'{os.getcwd()}/../Required_images'
-    for rootdir, dirs, files in os.walk(rootdir):
-        for subdir in dirs:
-            if("image" in subdir):
 
-                info_image = {"name": subdir, "path":os.path.join(rootdir, subdir)} 
-                info.append(info_image)
+    url = "http://192.168.50.218:8123/Test_sensor_host"
 
+    # Подключение к Redis
+    redis_client = redis.Redis("192.168.50.218", port=6379, db=0)
 
-        
+    # Отправка GET-запроса и получение JSON-данных
+    response = requests.get(url)
+    json_data = response.content
 
-    with open(f"{JSON_PATH}/images.json", "w") as outfile:
-        outfile.write(json.dumps(info, indent=4))
+    
+    parsed_json = json.loads(json_data) 
+    print(parsed_json)
+    redis_client.set(f'{parsed_json["sensor_name"]}', parsed_json["value"])
 
-
-Get_req_images()
+    time.sleep(5)

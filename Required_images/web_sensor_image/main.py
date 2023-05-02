@@ -9,6 +9,7 @@ from Models.Configurations import Web_sensor_config
 
 
 while True:
+    
 
     url = os.environ['HOST_TO_PING']
 
@@ -17,10 +18,9 @@ while True:
 
     # Отправка GET-запроса и получение JSON-данных
     response = requests.get(url)
-    json_data = response.content()
-    parsed_json = json.loads("json_data") 
+    json_data = response.content
+    parsed_json = json.loads(json_data) 
 
     redis_client.set(f'{parsed_json["sensor_name"]}', parsed_json["value"])
 
-
-    time.sleep(int(os.environ['TIMEOUT_SEND']))
+    time.sleep(float(os.environ['TIMEOUT_SEND']))

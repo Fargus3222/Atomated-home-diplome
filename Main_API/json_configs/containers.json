@@ -1,18 +1,18 @@
 {
     "MQTT_Broker": {
-        "id": "16f22ef8bcf88ef80cc41a8d27ec4130ff93223f973734b4ff4240f4887c1c0c",
+        "id": "65dcf407205588007ee4f67beb7ff64c56f78b44885c4fbb46f45d9b5df4f867",
         "ip": "10.0.0.3"
     },
     "Redis": {
-        "id": "5c5d648f6e5e2b07ca9d465a75f3111f79372197fc1ddd97ab6120b4b28854f9",
+        "id": "3106733797c68cadb64fce7a28a58bbf640672df2bd8df7ff59f19b9fba74121",
         "ip": "10.0.0.2"
     },
     "docker_api": {
-        "id": "b6fc26097d1052fc05c0efd3abc02f7c1e6f751e3060499a7ab16faaaf794aa2",
+        "id": "c22c0a902136e671369ad1d5dea77e56d61348df987874b36f8b05fd322f16b1",
         "ip": "10.0.0.4"
     },
     "Test": {
-        "id": "e949d409f20dd5b993de6d8dcc6ce6f0aea1b351e2bcf64811b9804264db63fa",
+        "id": "f1623e66cea0e520a2023a7045da76b42f58e05c8a6b79faae782b830f5a745c",
         "ip": "10.0.0.5"
     }
 }

@@ -1,7 +1,4 @@
-FROM alpine:latest
-
-RUN apk add python3
-RUN apk add py-pip
+FROM python:3.9.16-bullseye
 
 WORKDIR /foreverOnlineApp
 
