@@ -183,6 +183,30 @@ async def Run_web_sensor(Config : Models.Configurations.Web_sensor_config):
 
 
     return 200
+
+
+@app.post("/Run_mqtt_sensor")
+async def Run_mqtt_sensor(Config : Models.Configurations.mqtt_sensor_config):
+
+    with open(f"{JSON_PATH}/containers.json") as user_file:
+        file_contents = user_file.read()
+        
+
+    parsed_json = json.loads(file_contents)
+
+    REDIS_IP = parsed_json["Redis"]["ip"]
+    MQTT_IP = parsed_json["MQTT_Broker"]["ip"]
+    
+
+    env_vars = {
+    "REDIS_IP": REDIS_IP,
+    "MQTT_BROKER_IP":MQTT_IP,
+    "MQTT_TOPIC":Config.MQTT_topic}
+    container = start_container(image_name="web_sensor_image:latest", env_vars=env_vars, container_name = Config.Sensor_name, network_name="AH_net", ports=None, volumes=None)
+    WriteDockerConteinerInfo(id=container.id, name=Config.Sensor_name,ip = str( get_container_ip(container.id,"AH_net")))
+
+
+    return 200
     
 
 
@@ -303,7 +327,7 @@ if __name__ == "__main__":
         host_ip = s.getsockname()[0]
         s.close()
         print("Создание контейнера...")
-        env_vars = {"REDIS_IP": Get_containerts_data()["Redis"], "MQTT_BROKER_IP": Get_containerts_data()["MQTT_Broker"]["ip"],"HOST_API_IP":f"http://{host_ip}:8000" }
+        env_vars = {"REDIS_IP": Get_containerts_data()["Redis"]["ip"], "MQTT_BROKER_IP": Get_containerts_data()["MQTT_Broker"]["ip"],"HOST_API_IP":f"http://{host_ip}:8000" }
         ports = {'8123/tcp': ('0.0.0.0', 8123)}
         container_name = 'docker_api'
         image_name = 'docker_api_image'
