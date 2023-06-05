@@ -189,7 +189,7 @@ async def Run_web_sensor(Config : Models.Configurations.Web_sensor_config):
 
 
 @app.post("/Run_mqtt_sensor")
-async def Run_mqtt_sensor(Config : Models.Configurations.mqtt_sensor_config):
+async def Run_mqtt_sensor(Mqtt_sensor_config : Models.Configurations.mqtt_sensor_config):
 
     with open(f"{JSON_PATH}/containers.json") as user_file:
         file_contents = user_file.read()
@@ -198,15 +198,15 @@ async def Run_mqtt_sensor(Config : Models.Configurations.mqtt_sensor_config):
     parsed_json = json.loads(file_contents)
 
     REDIS_IP = parsed_json["Redis"]["ip"]
-    MQTT_IP = parsed_json["MQTT_Broker"]["ip"]
+    MQTT_IP = parsed_json["MQTT_broker"]["ip"]
     
 
     env_vars = {
     "REDIS_IP": REDIS_IP,
     "MQTT_BROKER_IP":MQTT_IP,
-    "MQTT_TOPIC":Config.MQTT_topic}
-    container = start_container(image_name="web_sensor_image:latest", env_vars=env_vars, container_name = Config.Sensor_name, network_name="AH_net", ports=None, volumes=None)
-    WriteDockerConteinerInfo(id=container.id, name=Config.Sensor_name,ip = str( get_container_ip(container.id,"AH_net")))
+    "MQTT_TOPIC":Mqtt_sensor_config.MQTT_topic}
+    container = start_container(image_name="mqtt_sensor_image:latest", env_vars=env_vars, container_name = Mqtt_sensor_config.Sensor_name, network_name="AH_net", ports=None, volumes=None)
+    WriteDockerConteinerInfo(id=container.id, name=Mqtt_sensor_config.Sensor_name,ip = str( get_container_ip(container.id,"AH_net")))
 
 
     return 200
@@ -263,6 +263,7 @@ if __name__ == "__main__":
         container = client.containers.get("redis_message_broker")
         if container.status == 'running':
             print("Redis server is found!")
+            WriteDockerConteinerInfo(name = "Redis", id= str(container.id),ip = get_container_ip("redis_message_broker","AH_net"))
         else:
             print("Run Redis server...")
             container.start()
@@ -287,6 +288,7 @@ if __name__ == "__main__":
         container = client.containers.get("MQTT_broker")
         if container.status == 'running':
             print("MQTT broker if found!")
+            WriteDockerConteinerInfo(name = "MQTT_broker", id= str(container.id),ip = get_container_ip("MQTT_broker","AH_net"))
         else:
             print("Run MQTT broker...")
             container.start()
@@ -306,7 +308,7 @@ if __name__ == "__main__":
         # запускаем контейнер Redis
         mosquitto_container = start_container(container_name, image_name, network_name, env_vars, ports, volumes)
 
-        WriteDockerConteinerInfo(name="MQTT_Broker", id = mosquitto_container.id, ip = get_container_ip(container_name,network_name) )
+        WriteDockerConteinerInfo(name="MQTT_broker", id = mosquitto_container.id, ip = get_container_ip(container_name,network_name) )
 
 
     try:
@@ -314,6 +316,7 @@ if __name__ == "__main__":
         container = client.containers.get("docker_api")
         if container.status == 'running':
             print("API is found!")
+            WriteDockerConteinerInfo(name="docker_api", id = container.id, ip = get_container_ip("docker_api","AH_net") )
         else:
             print("Run API...")
             container.start()
@@ -325,7 +328,7 @@ if __name__ == "__main__":
         host_ip = s.getsockname()[0]
         s.close()
         print("Createing container...")
-        env_vars = {"REDIS_IP": Get_containerts_data()["Redis"]["ip"], "MQTT_BROKER_IP": Get_containerts_data()["MQTT_Broker"]["ip"],"HOST_API_IP":f"http://{host_ip}:8000" }
+        env_vars = {"REDIS_IP": Get_containerts_data()["Redis"]["ip"], "MQTT_BROKER_IP": Get_containerts_data()["MQTT_broker"]["ip"],"HOST_API_IP":f"http://{host_ip}:8000" }
         ports = {'8123/tcp': ('0.0.0.0', 8123)}
         container_name = 'docker_api'
         image_name = 'docker_api_image'

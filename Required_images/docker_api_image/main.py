@@ -17,7 +17,7 @@ HOST_API_IP = os.environ['HOST_API_IP']
 
 
 @app.get("/get_sensor_data")
-async def recive(sensor_name: str):
+async def get_sensor_data(sensor_name: str):
 
     redis_client = redis.Redis(host=os.environ['REDIS_IP'], port=6379, db=0)
 
@@ -33,7 +33,7 @@ async def testsensor():
     return mes
 
 @app.post("/Run_web_sensor")
-async def testsensor(Config: Models.Configurations.Web_sensor_config):
+async def Run_web_sensor(Config: Models.Configurations.Web_sensor_config):
     
     headers = {'accept': 'application/json', 'Content-Type': 'application/json'}
 
@@ -50,14 +50,14 @@ async def testsensor(Config: Models.Configurations.Web_sensor_config):
 
 
 @app.post("/Run_mqtt_sensor")
-async def testsensor(Config: Models.Configurations.mqtt_sensor_config):
+async def Run_mqtt_sensor(Config: Models.Configurations.mqtt_sensor_config):
     
     headers = {'accept': 'application/json', 'Content-Type': 'application/json'}
 
     new_json = {}
 
     new_json["Sensor_name"] = Config.Sensor_name
-    new_json["Sensor_host"] = Config.MQTT_topic
+    new_json["MQTT_topic"] = Config.MQTT_topic
 
 
     requests.post(f"{HOST_API_IP}/Run_mqtt_sensor", headers=headers, json=new_json)
