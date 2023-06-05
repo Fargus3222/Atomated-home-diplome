@@ -25,7 +25,14 @@ async def get_sensor_data(sensor_name: str):
 
 
     data = redis_client.get(sensor_name)
-    return data
+
+
+    if str(data) == "null":
+        return 101
+    else:
+        return data
+        
+   
 
 @app.get("/Test_sensor_host")
 async def testsensor():

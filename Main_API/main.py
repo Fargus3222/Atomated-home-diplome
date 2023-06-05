@@ -164,28 +164,33 @@ async def StopContainer(NAME: str):
 
 
 
-@app.post("/Run_web_sensor")
+@app.post("/Run_web_sensor")Ё
 async def Run_web_sensor(Config : Models.Configurations.Web_sensor_config):
 
-    with open(f"{JSON_PATH}/containers.json") as user_file:
-        file_contents = user_file.read()
+
+
+    try:
+        container = client.containers.get(Config.Sensor_name)
+        return 101
+    except:
+        with open(f"{JSON_PATH}/containers.json") as user_file:
+            file_contents = user_file.read()
+            
+
+        parsed_json = json.loads(file_contents)
+
+        REDIS_IP = parsed_json["Redis"]["ip"]
         
 
-    parsed_json = json.loads(file_contents)
+        env_vars = {
+        "HOST_TO_PING": Config.Sensor_host,
+        "REDIS_IP": REDIS_IP,
+        "TIMEOUT_SEND":Config.Timeout,
+        "SENSOR_NAME":Config.Sensor_name}
+        container = start_container(image_name="web_sensor_image:latest", env_vars=env_vars, container_name = Config.Sensor_name, network_name="AH_net", ports=None, volumes=None)
+        WriteDockerConteinerInfo(id=container.id, name=Config.Sensor_name,ip = str( get_container_ip(container.id,"AH_net")))
 
-    REDIS_IP = parsed_json["Redis"]["ip"]
-    
-
-    env_vars = {
-    "HOST_TO_PING": Config.Sensor_host,
-    "REDIS_IP": REDIS_IP,
-    "TIMEOUT_SEND":Config.Timeout,
-    "SENSOR_NAME":Config.Sensor_name}
-    container = start_container(image_name="web_sensor_image:latest", env_vars=env_vars, container_name = Config.Sensor_name, network_name="AH_net", ports=None, volumes=None)
-    WriteDockerConteinerInfo(id=container.id, name=Config.Sensor_name,ip = str( get_container_ip(container.id,"AH_net")))
-
-
-    return 200
+        return 200
 
 
 @app.post("/Run_mqtt_sensor")
