@@ -65,6 +65,11 @@ async def testsensor(Config: Models.Configurations.mqtt_sensor_config):
     return 200
 
 
+@app.get("/")
+async def root():
+    mes2 = {"mqtt_port" : "1883", "Main_api_port": "8000", "API_port" : "8123"} 
+    return mes2
+
 
     
 

@@ -132,6 +132,9 @@ async def testsensor():
 
 
 
+
+
+
 @app.get("/StopContainer")
 async def StopContainer(NAME: str):
 
@@ -212,21 +215,16 @@ async def Run_mqtt_sensor(Config : Models.Configurations.mqtt_sensor_config):
 
 if __name__ == "__main__":
 
-    
-
-
-    
-
     start_time = datetime.now()
 
 
     
 
-    print("Инициализация системы...")
+    print("System initialization...")
 
     
 
-    print("Поиск и сборка необходимых образов...")
+    print("Search for the necessary images...")
 
     Get_req_images()
 
@@ -240,44 +238,44 @@ if __name__ == "__main__":
         try:
             image = client.images.get(image_info["name"])
         except docker.errors.ImageNotFound:
-            print(f"Идет сборка образа {image_info['name']}")
+            print(f"Image build proccess {image_info['name']}")
             BuildImage(image_info['path'], image_info['name'])
 
     
     net_id = []
     names=["AH_net"]
     my_net = client.networks.list(names=names)
-    print("Поиск сети...")
+    print("Search network...")
     if my_net == []:
-        print("Создание сети...")
+        print("Creating network...")
         ipam_pool = docker.types.IPAMPool(subnet='10.0.0.0/24',gateway='10.0.0.1')
 
         ipam_config = docker.types.IPAMConfig(pool_configs=[ipam_pool])
 
         network = client.networks.create("AH_net",driver="bridge",ipam=ipam_config)
     else:
-        print("Сеть обноружена!")
+        print("Network is found!")
         net_id = my_net[0].id
     
 
     try:
-        print("Поиск Redis сервера...")
+        print("Search Redis server...")
         container = client.containers.get("redis_message_broker")
         if container.status == 'running':
-            print("Redis сервер обнаружен!")
+            print("Redis server is found!")
         else:
-            print("Запуск Redis сервера...")
+            print("Run Redis server...")
             container.start()
     except:
-        print("Загрузка образа redis/redis-stack-server:latest ...")
+        print("Download image  redis/redis-stack-server:latest ...")
         client.images.pull("redis/redis-stack-server:latest") 
-        print("Создание контейнера...")
+        print("Creating container...")
         env_vars = {}
         ports = {'6379/tcp': ('0.0.0.0', 6379)}
         container_name = 'redis_message_broker'
         image_name = 'redis/redis-stack-server:latest'
         network_name = "AH_net"
-        print("Запуск Redis сервера...")
+        print("Run Redis server...")
         # запускаем контейнер Redis
         redis_container = start_container(container_name, image_name, network_name, env_vars, ports, volumes=None)
 
@@ -285,17 +283,17 @@ if __name__ == "__main__":
         WriteDockerConteinerInfo(name = "Redis", id= str(redis_container.id),ip = get_container_ip(container_name,network_name))
 
     try:
-        print("Поиск MQTT брокера...")
+        print("Search MQTT broker...")
         container = client.containers.get("MQTT_broker")
         if container.status == 'running':
-            print("MQTT брокер обнаружен!")
+            print("MQTT broker if found!")
         else:
-            print("Запуск MQTT брокера...")
+            print("Run MQTT broker...")
             container.start()
     except:
-        print("Загрузка образа eclipse-mosquitto:2.0.0 ...")
+        print("Download image eclipse-mosquitto:2.0.0 ...")
         client.images.pull("eclipse-mosquitto:2.0.0") 
-        print("Создание контейнера...")
+        print("Creating container...")
         env_vars = {}
         ports = {'1883/tcp': ('0.0.0.0', 1883)}
         volumes = {
@@ -304,7 +302,7 @@ if __name__ == "__main__":
         container_name = 'MQTT_broker'
         image_name = 'eclipse-mosquitto:2.0.0'
         network_name = "AH_net"
-        print("Запуск MQTT брокера...")
+        print("Run MQTT broker...")
         # запускаем контейнер Redis
         mosquitto_container = start_container(container_name, image_name, network_name, env_vars, ports, volumes)
 
@@ -312,12 +310,12 @@ if __name__ == "__main__":
 
 
     try:
-        print("Поиск API...")
+        print("Search  API...")
         container = client.containers.get("docker_api")
         if container.status == 'running':
-            print("API обнаружен!")
+            print("API is found!")
         else:
-            print("Запуск API...")
+            print("Run API...")
             container.start()
     except:
 
@@ -326,19 +324,19 @@ if __name__ == "__main__":
         s.connect(("8.8.8.8", 80))
         host_ip = s.getsockname()[0]
         s.close()
-        print("Создание контейнера...")
+        print("Createing container...")
         env_vars = {"REDIS_IP": Get_containerts_data()["Redis"]["ip"], "MQTT_BROKER_IP": Get_containerts_data()["MQTT_Broker"]["ip"],"HOST_API_IP":f"http://{host_ip}:8000" }
         ports = {'8123/tcp': ('0.0.0.0', 8123)}
         container_name = 'docker_api'
         image_name = 'docker_api_image'
         network_name = "AH_net"
-        print("Запуск API...")
+        print("Run API...")
         # запускаем контейнер Redis
         docker_api_container = start_container(container_name, image_name, network_name, env_vars, ports, volumes=None)
         WriteDockerConteinerInfo(name="docker_api", id = docker_api_container.id, ip = get_container_ip(container_name,network_name) )
     
 
-    print(f"Время инициализации системы {datetime.now() - start_time}")
-    print("Запуск API...")
+    print(f"Initialization time {datetime.now() - start_time}")
+    print("Run main API...")
     
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
